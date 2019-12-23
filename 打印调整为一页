@@ -1,0 +1,5 @@
+With WorkSheet(i).PageSetup
+  .Zoom = False  '缩放
+  .FitToPagesWide = 1
+  .FitToPagesTall = False
+End With
