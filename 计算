@@ -1,0 +1,2 @@
+Excel.Application.Calculation = xlCalculationManual'手动计算
+Excel.Application.Calculation = xlCalculationAutomatic'自动计算
