@@ -1,0 +1,20 @@
+Private Sub Worksheet_BeforeRightClick(ByVal Target As Range, Cancel As Boolean)
+    Dim objPopup As CommandBarButton
+    If Target.Column <= 4 Then
+        With Application.CommandBars("cell")
+            .Reset
+            Set objPopup1 = .Controls.Add(msoControlButton)
+            With objPopup1
+                .Caption = "【更新合同条款并计算】"
+                .OnAction = "合同条款"
+            End With
+            Set objPopup2 = .Controls.Add(msoControlButton)
+            With objPopup2
+                .Caption = "【查看合同PDF】"
+                .OnAction = "调用合同"
+            End With
+         End With
+    Else
+        Application.CommandBars("cell").Reset
+    End If
+End Sub
