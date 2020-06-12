@@ -1,0 +1,5 @@
+Sheets("合同已存档").Select
+Set contract_save_d = CreateObject("scripting.dictionary")
+For r = 1 To Range("A1").CurrentRegion.Rows.Count
+   contract_save_d(Cells(r, 1).Value) = Cells(r, 1).Value
+Next
