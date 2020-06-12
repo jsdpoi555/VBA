@@ -1,0 +1,3 @@
+title_1 = "供应商名称"
+title_1_c = Rows(1).Find(title_1).Column
+title_1_a = alpht(Int((title_1_c - 1) / 26)) & Chr(64 + ((title_1_c - 1) Mod 26) + 1)
