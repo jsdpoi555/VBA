@@ -1,0 +1,9 @@
+Sub 取消隐藏行列()
+For i = 1 To Sheets.Count
+    Sheets(i).Select
+    Cells.Select
+    Selection.EntireColumn.Hidden = False
+    Selection.EntireRow.Hidden = False
+Next
+MsgBox "done"
+End Sub
