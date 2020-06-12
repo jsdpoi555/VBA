@@ -17,3 +17,8 @@ expression.Resize(RowSize, ColumnSize)
 expression 必需。该表达式返回要调整大小的 Range对象。
 RowSize Variant 类型，可选。新区域中的行数。如果省略该参数，则该区域中的行数保持不变。
 ColumnSize Variant类型，可选。新区域中的列数。如果省略该参数。则该区域中的列数保持不变。
+
+
+zz_arr = Application.Transpose(Array(zz_d.keys, zz_d.items))
+Sheets("A").Select
+Range("A1").Resize(UBound(zz_arr), 2) = Application.Transpose(Array(zz_d.keys, zz_d.items))
