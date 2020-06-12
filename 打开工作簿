@@ -1,1 +1,1 @@
-Set wkb1 = Workbooks.Open(mypath & "\1数据源\" & data_v_index & "数据抽取返利-全量.xlsx")
+Set wkb1 = Workbooks.Open(ThisWorkbook.Path & "\组织单元\组织单元" & qj & ".xlsx")
