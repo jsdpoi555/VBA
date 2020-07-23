@@ -1,0 +1,9 @@
+Sub 提取目录()
+Sheets("目录").Select
+Columns("A:A").Select
+Selection.NumberFormatLocal = "@"
+For i = 1 To Sheets.Count
+   Cells(i, "A") = CStr(Sheets(i).Name)
+       ActiveSheet.Hyperlinks.Add Anchor:=Cells(i, "A"), Address:="", SubAddress:=Cells(i, "A").Value & "!A1"
+Next
+End Sub
