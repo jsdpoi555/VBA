@@ -9,18 +9,3 @@ Next
 转数组
 zz_arr = Application.Transpose(Array(zz_d.keys, zz_d.items))
 
-转自 鱼木混猪
-可以用baiResize来实现，du示例如下：
-arr=range("A1:Z1")'将第一行，A到Z列，赋值给数组arr
-range("A2").resize(ubound(arr),1)=application.transpose(arr)'将数组Arr转置后，赋予zhiA2开始的A列中。
-关于Resize属性：
-调整指dao定区域的大小。返回 Range对象，该对象代表调整后的区域。
-expression.Resize(RowSize, ColumnSize)
-expression 必需。该表达式返回要调整大小的 Range对象。
-RowSize Variant 类型，可选。新区域中的行数。如果省略该参数，则该区域中的行数保持不变。
-ColumnSize Variant类型，可选。新区域中的列数。如果省略该参数。则该区域中的列数保持不变。
-
-
-zz_arr = Application.Transpose(Array(zz_d.keys, zz_d.items))
-Sheets("A").Select
-Range("A1").Resize(UBound(zz_arr), 2) = Application.Transpose(Array(zz_d.keys, zz_d.items))
