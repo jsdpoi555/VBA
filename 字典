@@ -4,6 +4,8 @@ For r = 1 To Range("A1").CurrentRegion.Rows.Count
    contract_save_d(Cells(r, 1).Value) = Cells(r, 1).Value
 Next
 
+输出Sheets("汇总").Cells(2, 1).Resize(d.Count, 2) = Application.Transpose(Array(d.Keys, d.items))
+
 转数组
 zz_arr = Application.Transpose(Array(zz_d.keys, zz_d.items))
 
