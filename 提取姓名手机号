@@ -1,0 +1,72 @@
+关键点：手机号永远在姓名后面列，且保证同行
+
+Sub aaa()
+Sheets("汇总").Cells.Clear
+'循环打开全部Excel文件
+'取消隐藏sheet
+'定位包含姓名、手机号sheet
+'读取姓名手机号到字典，姓名为key
+Dim path           As String
+Dim FileName       As String
+Dim LastCell       As Range
+Dim Wkb            As Workbook
+Dim WS             As Worksheet
+Dim ThisWB         As String
+Dim rg As Range
+Dim MyDir As String
+
+Set d = CreateObject("scripting.dictionary")
+
+MyDir = ThisWorkbook.path & "\"
+ThisWB = ThisWorkbook.Name
+  Application.EnableEvents = False
+  Application.ScreenUpdating = False
+   path = MyDir
+   FileName = Dir(path & "*.xls*", vbNormal)
+   Do Until FileName = ""
+      If FileName <> ThisWB Then
+          Set Wkb = Workbooks.Open(FileName:=path & "\" & FileName)
+          'Wkb.ActiveProtectedViewWindow.Edit
+          For i = 1 To Wkb.Sheets.Count
+          Set WS = Wkb.Sheets(i)
+              WS.Visible = True
+              'WS.Select
+              cmax = WS.UsedRange.Columns.Count
+              rmax = WS.UsedRange.Rows.Count
+              For c = 1 To cmax
+                'Columns(c).Select
+                Set rg = WS.Columns(c).Find("*姓*名*")
+                If rg Is Nothing Then
+                Else
+                cn = c
+                    For r = rg.Row + 1 To rmax
+                      If WS.Cells(r, c) <> "" Then
+                        d(WS.Cells(r, c).Value) = "手机号"
+                      End If
+                    Next
+                End If
+                
+                Set rg = WS.Columns(c).Find("*手*机*")
+                If rg Is Nothing Then
+                Else
+                    For r = rg.Row + 1 To rmax
+                    
+                      If d.exists(WS.Cells(r, cn).Value) And WS.Cells(r, c) <> "" Then
+                
+                        d(WS.Cells(r, cn).Value) = d(WS.Cells(r, cn).Value) & "|" & WS.Cells(r, c).Value
+
+                      End If
+                    Next
+                End If
+              Next
+          Next
+          Wkb.Close False
+      End If
+      FileName = Dir()
+   Loop
+  Application.EnableEvents = True
+  Application.ScreenUpdating = True
+'MsgBox d.Count
+Sheets("汇总").Cells(2, 1).Resize(d.Count, 2) = Application.Transpose(Array(d.Keys, d.items))
+End Sub
+
