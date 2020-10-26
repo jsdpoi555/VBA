@@ -1,0 +1,1 @@
+ActiveSheet.Pictures.Insert ("\\10.10.10.5\share\财务部\预开票\2020预审\凭证\" & n & ".png")
