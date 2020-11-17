@@ -1,0 +1,25 @@
+
+Sub bbb()
+Application.ScreenUpdating = False
+
+
+'本路径下找到全部的月结表，从中选一个创建日期最新的
+
+path = ThisWorkbook.path & "\"
+Set fs = CreateObject("Scripting.FileSystemObject")
+FileName = Dir(path & "月结客户发票核销*.xls*", vbNormal)
+datetime1 = CDate("1900/01/01 00:00:01")
+file_final = ""
+Do Until FileName = ""
+    File = path & FileName
+    datetime2 = fs.GetFile(File).DateCreated
+    If datetime2 > datetime1 Then
+        datetime1 = datetime2
+        file_final = path & FileName
+    End If
+    
+    FileName = Dir()
+Loop
+Debug.Print file_final
+Application.ScreenUpdating = True
+End Sub
