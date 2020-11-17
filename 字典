@@ -9,3 +9,5 @@ Next
 转数组
 zz_arr = Application.Transpose(Array(zz_d.keys, zz_d.items))
 
+下限 d.count
+
