@@ -1,0 +1,32 @@
+filePath = "\\10.10.10.5\share\财务部\预开票\银行收款入账底稿\"
+        Filename = Dir(filePath & "*.xls*", vbNormal)
+        Do Until Filename = ""
+            If Filename Like (Left(Cells(r, "C"), 4) & "*") Then
+                Set wkb = Workbooks.Open(Filename:=filePath & "\" & Filename)
+                For i = 1 To wkb.Sheets.Count
+                    wkb.Sheets(i).Visible = True
+                    If wkb.Sheets(i).Name Like "*.*" Then
+                        wkb.Sheets(i).Select
+                        snm = wkb.Sheets(i).Name
+                        If Len(snm) <> 5 Then
+                            Z = Application.WorksheetFunction.Find(".", snm)
+                            If Len(Left(snm, Z - 1)) = 1 Then
+                                sm = "0" & Left(snm, Z - 1)
+                            Else
+                                sm = Left(snm, Z - 1)
+                            End If
+                            
+                            If Len(Right(snm, Len(snm) - Z)) = 1 Then
+                                sd = "0" & Right(snm, Len(snm) - Z)
+                            Else
+                                sd = Right(snm, Len(snm) - Z)
+                            End If
+                            
+                            wkb.Sheets(i).Name = sm & "." & sd
+                        End If
+                    End If
+                Next
+                wkb.Close True
+            End If
+            Filename = Dir()
+        Loop
