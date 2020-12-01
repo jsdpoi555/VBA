@@ -1,0 +1,27 @@
+Sub aaa()
+Sheets("A").Select
+Set d = CreateObject("scripting.dictionary")
+Set cd = CreateObject("scripting.dictionary")
+rmax1 = Cells(1, 1).End(xlDown).Row
+For r = 1 To rmax1
+    d(Cells(r, 1).Value) = Cells(r, 1).Value
+Next
+
+Sheets("全量20201201").Select
+rmax2 = Cells(1, "Q").End(xlDown).Row '出库单号
+For r = 1 To rmax2
+    If d.exists(Cells(r, "Q").Value) Then
+    Else
+        cd(Cells(r, "Q").Value) = Cells(r, "Q").Value
+    End If
+Next
+
+Sheets("A").Select
+For r = 1 To rmax1
+    If cd.exists(Cells(r, "A").Value) Then
+        Cells(r, "B") = 1
+    End If
+Next
+
+Debug.Print "ok"
+End Sub
