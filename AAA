@@ -1,0 +1,301 @@
+Attribute VB_Name = "模块2"
+Sub aaa()
+Application.DisplayAlerts = False
+Application.ScreenUpdating = False
+
+Set ThisWB = ThisWorkbook
+Set dic = CreateObject("scripting.dictionary")
+Set ckd_d = CreateObject("scripting.dictionary")
+Set dic_pt = CreateObject("scripting.dictionary") '平台
+Set dic_sx = CreateObject("scripting.dictionary") '实销
+Set dic_bc = CreateObject("scripting.dictionary") '补差
+Set dic_hd = CreateObject("scripting.dictionary") '核对
+
+'先按平台提报数据排号
+'删除【平台提报数据】后重新拷一个最新的来
+For i = Sheets.Count To 1 Step -1
+    If Sheets(i).Name = "平台提报数据" Then
+        Sheets(i).Delete
+    Else
+        Sheets(i).Select
+        ActiveSheet.AutoFilterMode = False
+    End If
+Next
+path = ThisWorkbook.path & "\"
+FileName = path & "平台提报数据.xlsx"
+Set Wkb = Workbooks.Open(FileName)
+Set WS = Wkb.Sheets("平台提报数据")
+WS.Copy After:=ThisWB.Sheets("汇总")
+Wkb.Close False
+
+Sheets("平台提报数据").Select
+'平台提报数据按订单编号升序排序
+rmax = Cells(1, 1).End(xlDown).Row
+cmax = Cells(1, 1).End(xlToRight).Column
+Cells(1, "F").Select
+    Selection.AutoFilter
+    ActiveWorkbook.Worksheets("平台提报数据").AutoFilter.Sort.SortFields.Clear
+    ActiveWorkbook.Worksheets("平台提报数据").AutoFilter.Sort.SortFields.Add Key:=Range _
+        ("F1:F" & rmax), SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:= _
+        xlSortNormal
+    With ActiveWorkbook.Worksheets("平台提报数据").AutoFilter.Sort
+        .Header = xlYes
+        .MatchCase = False
+        .Orientation = xlTopToBottom
+        .SortMethod = xlPinYin
+        .Apply
+    End With
+ActiveSheet.AutoFilterMode = False
+'初始核对序号
+With Sheets("平台提报数据")
+    Cells(1, cmax + 1) = "核对序号"
+    EPO_set_no = 0
+    For r = 2 To rmax
+        ID = Cells(r, "F").Value
+        If dic.exists(ID) Then
+            Cells(r, cmax + 1) = dic(ID)
+        Else
+            EPO_set_no = EPO_set_no + 1
+            Cells(r, cmax + 1) = EPO_set_no
+            dic(ID) = EPO_set_no
+        End If
+    Next
+End With
+
+
+Debug.Print "===【平台提报数据ok】==="
+'特殊合并补充
+Sheets("特殊合并补充").Select
+rmax = Cells(1, 1).End(xlDown).Row
+For r = 2 To rmax
+    ID_L = Cells(r, 1).Value
+    ID_R = Cells(r, 2).Value
+    If dic.exists(ID_L) And dic.exists(ID_R) Then
+        n = Application.WorksheetFunction.Min(dic(ID_L), dic(ID_R))
+        dic(ID_L) = n
+        dic(ID_R) = n
+    End If
+Next
+Debug.Print "===【初步核对序号调整ok】==="
+'提取实销数据
+'本路径下找到全部的月结表，从中选一个创建日期最新的
+path = ThisWorkbook.path & "\"
+Set fs = CreateObject("Scripting.FileSystemObject")
+FileName = Dir(path & "月结客户发票核销*.xls*", vbNormal)
+datetime1 = CDate("1900/01/01 00:00:01")
+file_final = ""
+Do Until FileName = ""
+    File = path & FileName
+    datetime2 = fs.GetFile(File).DateCreated
+    If datetime2 > datetime1 Then
+        datetime1 = datetime2
+        file_final = path & FileName
+    End If
+    FileName = Dir()
+Loop
+
+Set Wkb = Workbooks.Open(file_final)
+Set WS = Wkb.Sheets(1)
+WS.Select
+    cmax = ActiveCell.SpecialCells(xlLastCell).Column
+    rmax = ActiveCell.SpecialCells(xlLastCell).Row
+    For n = 1 To 20
+        For m = 1 To cmax
+            If Cells(n, m) = "出库单" Then
+                title_r = n
+                ckd_c = m '出库单
+            End If
+        Next
+    Next
+
+arr = Array("外部订单号", "单据金额", "退单金额合计") '0开始，刨掉了运费，南网一般没有运费，有运费的运费都差异化核销了
+Set arr_d = CreateObject("scripting.dictionary")
+For i = 1 To UBound(arr) + 1
+    For m = 1 To cmax
+         If Cells(title_r, m) = arr(i - 1) Then
+            arr_d(arr(i - 1)) = m
+         End If
+    Next
+Next
+
+
+ckd_d("出库单") = "外部订单号|单据金额|退单金额合计|实销金额"
+For i = title_r + 1 To rmax
+    v1 = Cells(i, arr_d("外部订单号"))
+    v2 = Val(Cells(i, arr_d("单据金额")) & "")
+    v3 = Val(Cells(i, arr_d("退单金额合计")) & "")
+    v4 = v2 + v3
+    v_f = v1 & "|" & v2 & "|" & v3 & "|" & v4 & "|" & v5
+    ckd_d(Cells(i, ckd_c).Value) = v_f
+Next
+Wkb.Close False
+
+Sheets("汇总").Select
+With Sheets("汇总")
+    .Cells.Clear
+    .Cells.NumberFormatLocal = "@"
+    i = 1
+    For Each Key In ckd_d.keys
+        .Cells(i, 1).Value = Key
+        .Cells(i, 2).Resize(1, 4) = Split(ckd_d(Key), "|")
+        i = i + 1
+    Next
+End With
+Debug.Print "===【汇总第一步-提取实销数据ok】==="
+'整合外部订单号集合
+rmax = Cells(1, 1).End(xlDown).Row
+c = 2 '外部订单号列
+c_s = Cells(1, 1).CurrentRegion.Columns.Count '新增前最后列
+EPO_count_max = 0
+EPO_c = 0
+Cells(1, c_s + 1) = "Len"
+Cells(1, c_s + 2) = "EPO_count"
+For r = 2 To rmax
+    order_no_eip = Cells(r, c).Value
+    '局部外部订单号替换
+    If Left(order_no_eip, 14) = "20191112001SYY" Then
+        order_no_eip = "2100EPO201911000008/2100EPO201911000010"
+    End If
+    order_no_eip_len = Len(order_no_eip)
+    Cells(r, c_s + 1) = order_no_eip_len
+    EPO_count = (Len(order_no_eip) - Len(Replace(order_no_eip, "EPO", ""))) / 3
+    EPO_index = InStr(order_no_eip, "EPO")
+    Cells(r, c_s + 2) = EPO_count
+    order_no = ""
+    If EPO_count > EPO_count_max Then
+        EPO_count_max = EPO_count
+        EPO_c = EPO_c + 1
+        Cells(1, c_s + 2 + EPO_c) = "EPO-" & EPO_c
+    End If
+    If EPO_count > 0 Then
+        order_no = Mid(order_no_eip, EPO_index - 4, 19)
+        Cells(r, c_s + 3) = order_no
+        For i = 2 To EPO_count
+            order_no_eip_extend = Mid(order_no_eip, EPO_index - 4 + 19 * (i - 1), Len(order_no_eip) - (EPO_index - 4 + 19 * (i - 1)) + 1)
+            EPO_index_extend = InStr(order_no_eip_extend, "EPO")
+            order_no = Mid(order_no_eip_extend, EPO_index_extend - 4, 19)
+            Cells(r, c_s + 2 + i) = order_no
+        Next
+    Else
+        If order_no_eip = "7106290518" Then
+            order_no = Cells(Columns(1).Find("7106290518").Row, c_s + 3)
+        Else
+            order_no = "无对应外部订单号"
+        End If
+        Cells(r, c_s + 3) = order_no
+    End If
+Next
+Debug.Print "===【汇总第二步-拆分平台号ok】==="
+'汇总-核对序号
+For r = 2 To rmax
+    If dic.exists(Cells(r, c_s + 2 + 1).Value) Then
+        Cells(r, c_s + 2 + EPO_count_max + 1) = dic(Cells(r, c_s + 2 + 1).Value) '* 1
+    Else
+        EPO_set_no = EPO_set_no + 1
+        Cells(r, c_s + 2 + EPO_count_max + 1) = EPO_set_no
+        dic(Cells(r, c_s + 2 + 1).Value) = Cells(r, c_s + 2 + EPO_count_max + 1).Value
+    End If
+Next
+
+For r = 2 To rmax
+    For i = 2 To EPO_count_max
+        If Cells(r, c_s + 2 + i) <> "" Then
+            'Cells(r, c_s + 2 + i).Select
+            ID1 = Cells(r, c_s + 2 + 1).Value
+            ID2 = Cells(r, c_s + 2 + i).Value
+            n = Application.WorksheetFunction.Min(dic(ID1), dic(ID2))
+            dic(ID1) = n
+            dic(ID2) = n
+        End If
+    Next
+Next
+Cells(1, c_s + 2 + EPO_count_max + 1) = "核对序号"
+Debug.Print "===【汇总第三步-调整核对序号ok】==="
+
+'更新最终核对序号【平台、汇总、补差】的核对序号都在最后一列
+'取值
+Sheets("平台提报数据").Select
+rmax = Cells(1, 1).End(xlDown).Row
+cmax = Cells(1, 1).End(xlToRight).Column
+For r = 2 To rmax
+    ID = Cells(r, "F").Value
+    hd_index = dic(ID)
+    Cells(r, cmax) = hd_index
+    dic_pt(hd_index) = dic_pt(hd_index) + Val(Cells(r, "G").Value & "")
+Next
+
+Sheets("汇总").Select
+rmax = Cells(1, 1).End(xlDown).Row
+cmax = Cells(1, 1).End(xlToRight).Column
+For r = 2 To rmax
+    ID = Cells(r, "H").Value
+    hd_index = dic(ID)
+    Cells(r, cmax) = hd_index
+    dic_sx(hd_index) = dic_sx(hd_index) + Val(Cells(r, "E").Value & "")
+Next
+
+Sheets("补差").Select
+rmax = Cells(1, 1).End(xlDown).Row
+cmax = Cells(1, 1).End(xlToRight).Column
+For r = 2 To rmax
+    ID = Cells(r, "A").Value
+    hd_index = dic(ID)
+    Cells(r, cmax) = hd_index
+    dic_bc(hd_index) = dic_bc(hd_index) + Val(Cells(r, "B").Value & "")
+Next
+
+Debug.Print "===【调整核对序号ok】==="
+Debug.Print dic("0800EPO201812000149")
+Debug.Print dic("0800EPO201812000150")
+Debug.Print dic("0800EPO201812000151")
+
+'核对
+Sheets("核对").Select
+With Sheets("核对")
+    .Cells.Clear
+End With
+i = 1
+Cells(1, 1) = "核对序号"
+Cells(1, 2) = "提报金额（合计）"
+Cells(1, 3) = "实销金额（合计）"
+Cells(1, 4) = "补差（合计）"
+Cells(1, 5) = "差异"
+For Each Key In dic_pt.keys
+    i = i + 1
+    Cells(i, 1) = Key
+    Cells(i, 2) = dic_pt(Key) + 0
+    Cells(i, 3) = dic_sx(Key) + 0
+    Cells(i, 4) = dic_bc(Key) + 0
+    hd = Round(Cells(i, 2) - Cells(i, 3) - Cells(i, 4), 2)
+    Cells(i, 5) = cy
+    If hd = 0 Then
+    Else
+        dic_hd(Key) = hd
+    End If
+Next
+Debug.Print "===【核对ok】==="
+'核对结果反馈到平台提报数据
+Sheets("平台提报数据").Select
+rmax = Cells(1, 1).End(xlDown).Row
+cmax = Cells(1, 1).End(xlToRight).Column
+Cells(1, cmax + 1) = "核对结果"
+Cells(1, cmax + 2) = "合并情况"
+Cells(1, cmax + 3) = "差异金额"
+For r = 2 To rmax
+    hd_index = Cells(r, cmax).Value
+    
+    If dic_hd.exists(hd_index) Then
+        Cells(r, cmax + 1) = "不一致"
+        Cells(r, cmax + 3) = dic_hd(hd_index)
+    Else
+        Cells(r, cmax + 1) = "一致"
+        Cells(r, cmax + 3) = 0
+    End If
+Next
+Cells(1, "F").Select
+Selection.AutoFilter
+    
+Application.DisplayAlerts = True
+Application.ScreenUpdating = True
+Debug.Print "===【ok】==="
+End Sub
