@@ -12,3 +12,5 @@ Transpose不适合数据太多，字符太长的转置
 
 下限 d.count
 
+移除d.Remove(key)
+
